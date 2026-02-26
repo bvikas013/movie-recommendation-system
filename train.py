@@ -1,20 +1,27 @@
 """
 train.py — Preprocess data and save model artifacts
+
 Run once before launching the app:
-    python src/train.py
+    python train.py
 """
 
 import os
 import sys
 
+# Add current directory to path
 sys.path.insert(0, os.path.dirname(__file__))
+
 from recommender import MovieRecommender
 
-DATA_DIR      = os.path.join(os.path.dirname(__file__), "..", "data")
-ARTIFACTS_DIR = os.path.join(os.path.dirname(__file__), "..", "artifacts")
+# ---------- PATH SETTINGS ----------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-MOVIES_CSV  = os.path.join(DATA_DIR, "tmdb_5000_movies.csv")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+ARTIFACTS_DIR = os.path.join(BASE_DIR, "artifacts")
+
+MOVIES_CSV = os.path.join(DATA_DIR, "tmdb_5000_movies.csv")
 CREDITS_CSV = os.path.join(DATA_DIR, "tmdb_5000_credits.csv")
+# -----------------------------------
 
 
 def main():
@@ -38,6 +45,9 @@ def main():
     print("\n[1/3] Loading & merging datasets...")
     print("[2/3] Building feature tags & similarity matrix...")
     rec.fit(MOVIES_CSV, CREDITS_CSV)
+
+    # Create artifacts folder if missing
+    os.makedirs(ARTIFACTS_DIR, exist_ok=True)
 
     print("[3/3] Saving artifacts...")
     rec.save(ARTIFACTS_DIR)
