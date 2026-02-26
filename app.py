@@ -1,6 +1,7 @@
 """
 Movie Recommendation System — Streamlit App
-Run: streamlit run app.py
+Run:
+    streamlit run app.py
 """
 
 import streamlit as st
@@ -8,14 +9,14 @@ import pandas as pd
 import os
 import sys
 
-# FIX: no src folder → use current directory
+# use current folder (no src folder)
 sys.path.insert(0, os.path.dirname(__file__))
 from recommender import MovieRecommender
 
 
-# ──────────────────────────────────────────────
-# Page config
-# ──────────────────────────────────────────────
+# ---------------------------------------------------
+# Page Config
+# ---------------------------------------------------
 st.set_page_config(
     page_title="🎬 Movie Recommender",
     page_icon="🎬",
@@ -23,9 +24,9 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ──────────────────────────────────────────────
-# Custom CSS
-# ──────────────────────────────────────────────
+# ---------------------------------------------------
+# Styling
+# ---------------------------------------------------
 st.markdown("""
 <style>
 .main-header {
@@ -47,13 +48,13 @@ st.markdown("""
     text-align: center;
 }
 .movie-title {
-    font-size: 0.9rem;
-    font-weight: 700;
     color: white;
+    font-weight: 700;
+    font-size: 0.9rem;
 }
 .movie-meta {
-    font-size: 0.75rem;
     color: #aaa;
+    font-size: 0.75rem;
 }
 .score-badge {
     background:#E50914;
@@ -69,27 +70,44 @@ TMDB_IMG_BASE = "https://image.tmdb.org/t/p/w300"
 PLACEHOLDER_IMG = "https://via.placeholder.com/200x300/1a1a1a/E50914?text=No+Image"
 
 
-# ──────────────────────────────────────────────
-# Load model
-# ──────────────────────────────────────────────
+# ---------------------------------------------------
+# Load Model (FIXED VERSION)
+# ---------------------------------------------------
 @st.cache_resource(show_spinner="Loading recommendation engine...")
 def load_model():
-    rec = MovieRecommender()
-    artifacts_path = os.path.join(os.path.dirname(__file__), "artifacts")
 
-    if os.path.exists(artifacts_path):
+    rec = MovieRecommender()
+
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    artifacts_path = os.path.join(BASE_DIR, "artifacts")
+
+    movies_file = os.path.join(artifacts_path, "movies.pkl")
+    sim_file = os.path.join(artifacts_path, "similarity.pkl")
+
+    if os.path.exists(movies_file) and os.path.exists(sim_file):
         rec.load(artifacts_path)
         return rec
+
     return None
 
 
+# ---------------------------------------------------
+# Movie Card UI
+# ---------------------------------------------------
 def render_movie_card(col, title, vote_avg, release_date, poster_path, sim_score=None):
 
     img_url = f"{TMDB_IMG_BASE}{poster_path}" if poster_path else PLACEHOLDER_IMG
     year = str(release_date)[:4] if pd.notna(release_date) else "N/A"
 
-    score_html = f'<span class="score-badge">★ {vote_avg:.1f}</span>' if pd.notna(vote_avg) else ""
-    sim_html = f'<p class="movie-meta">Similarity: {sim_score:.2%}</p>' if sim_score else ""
+    score_html = (
+        f'<span class="score-badge">★ {vote_avg:.1f}</span>'
+        if pd.notna(vote_avg) else ""
+    )
+
+    sim_html = (
+        f'<p class="movie-meta">Similarity: {sim_score:.2%}</p>'
+        if sim_score else ""
+    )
 
     with col:
         st.markdown(f"""
@@ -97,15 +115,15 @@ def render_movie_card(col, title, vote_avg, release_date, poster_path, sim_score
             <img src="{img_url}" width="100%" style="border-radius:8px;"
                  onerror="this.src='{PLACEHOLDER_IMG}'"/>
             <p class="movie-title">{title}</p>
-            <p class="movie-meta">{year} &nbsp; {score_html}</p>
+            <p class="movie-meta">{year} {score_html}</p>
             {sim_html}
         </div>
         """, unsafe_allow_html=True)
 
 
-# ──────────────────────────────────────────────
+# ---------------------------------------------------
 # Main App
-# ──────────────────────────────────────────────
+# ---------------------------------------------------
 def main():
 
     st.markdown('<div class="main-header">🎬 CineMatch</div>', unsafe_allow_html=True)
@@ -129,10 +147,10 @@ def main():
         return
 
     tab1, tab2, tab3 = st.tabs(
-        ["🔍 Find Recommendations", "🏆 Top Rated", "📊 About Model"]
+        ["🔍 Recommendations", "🏆 Top Rated", "📊 About Model"]
     )
 
-    # ---------- Tab 1 ----------
+    # ---------------- TAB 1 ----------------
     with tab1:
 
         all_titles = sorted(rec.df["title"].tolist())
@@ -144,7 +162,6 @@ def main():
             if "The Dark Knight" in all_titles else 0,
         )
 
-        # FIX: width instead of use_container_width
         if st.button("✨ Get Recommendations", width="stretch", type="primary"):
 
             with st.spinner("Finding similar movies..."):
@@ -169,24 +186,26 @@ def main():
                     if (i + 1) % 5 == 0 and i + 1 < len(results):
                         cols = st.columns(5)
 
-    # ---------- Tab 2 ----------
+    # ---------------- TAB 2 ----------------
     with tab2:
 
-        top = rec.top_rated(n=15)
+        top = rec.top_rated(15)
 
         st.dataframe(
             top.style.background_gradient(subset=["vote_average"], cmap="RdYlGn"),
-            width="stretch",  # FIXED
+            width="stretch",
         )
 
-    # ---------- Tab 3 ----------
+    # ---------------- TAB 3 ----------------
     with tab3:
-        st.markdown("""
-        ### 🧠 How it works
 
-        - Overview + genres + keywords + cast + director → tags  
-        - CountVectorizer converts text to vectors  
-        - Cosine similarity finds similar movies
+        st.markdown("""
+        ### 🧠 How It Works
+
+        - Combine overview + genres + cast + director → tags
+        - Convert text into vectors using CountVectorizer
+        - Compute cosine similarity
+        - Return most similar movies
         """)
 
         c1, c2, c3 = st.columns(3)
