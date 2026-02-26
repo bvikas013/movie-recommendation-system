@@ -112,7 +112,7 @@ data/tmdb_5000_credits.csv
 
 ### 5. Train the model (preprocess & save artifacts)
 ```bash
-python src/train.py
+python train.py
 ```
 
 ### 6. Launch the app
